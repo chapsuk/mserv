@@ -43,4 +43,4 @@ func main() {
 }
 ```
 
-full example [here](/examples/maini.go)
+full example [here](/examples/main.go)
