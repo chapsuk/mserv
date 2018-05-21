@@ -13,7 +13,7 @@ type HTTPServer struct {
 }
 
 // NewHTTPServer returns new http.Server wrapper
-func NewHTTPServer(shutdownTiimeout time.Duration, server *http.Server) Server {
+func NewHTTPServer(shutdownTimeout time.Duration, server *http.Server) Server {
 	if server == nil {
 		log.Print("missing http.Server, skip")
 		return nil
@@ -25,7 +25,7 @@ func NewHTTPServer(shutdownTiimeout time.Duration, server *http.Server) Server {
 	}
 
 	return &HTTPServer{
-		shutdownTimeout: shutdownTiimeout,
+		shutdownTimeout: shutdownTimeout,
 		server:          server,
 	}
 }
