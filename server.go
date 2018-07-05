@@ -1,7 +1,5 @@
 package mserv
 
-import "go.uber.org/dig"
-
 // Server interface
 type Server interface {
 	Start()
@@ -40,15 +38,4 @@ func (ms *MultiServer) Stop() {
 			s.Stop()
 		}
 	}
-}
-
-// DigMultiServerParams inject dig providers with `group:"mserv"` tag
-type DigMultiServerParams struct {
-	dig.In
-	Servers []Server `group:"mserv"`
-}
-
-// NewByDig returns new multi server instance from incomming params
-func NewByDig(p DigMultiServerParams) Server {
-	return New(p.Servers...)
 }
