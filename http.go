@@ -48,7 +48,14 @@ func (h *HTTPServer) Start() {
 
 // Stop http server with timeout
 func (h *HTTPServer) Stop() {
-	if h == nil || h.shutdownTimeout == 0 {
+	if h == nil {
+		return
+	}
+
+	if h.shutdownTimeout == 0 {
+		if err := h.server.Close(); err != nil {
+			log.Printf("stop http server error: %s", err)
+		}
 		return
 	}
 
