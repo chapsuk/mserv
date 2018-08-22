@@ -2,7 +2,6 @@ package mserv
 
 import (
 	"context"
-	"net/http"
 	"time"
 )
 
@@ -10,6 +9,7 @@ type (
 	// Serve wrapper for Listener interface
 	Serve struct {
 		shutdownTimeout time.Duration
+		shutdownError   error
 		server          Listener
 	}
 
@@ -20,7 +20,7 @@ type (
 )
 
 // NewListener returns new Listener wrapper
-func NewListener(shutdownTimeout time.Duration, server Listener) Server {
+func NewListener(shutdownTimeout time.Duration, shutdownError error, server Listener) Server {
 	if server == nil {
 		log.Print("missing Listener, skip")
 		return nil
@@ -28,6 +28,7 @@ func NewListener(shutdownTimeout time.Duration, server Listener) Server {
 
 	return &Serve{
 		shutdownTimeout: shutdownTimeout,
+		shutdownError:   shutdownError,
 		server:          server,
 	}
 }
@@ -37,7 +38,8 @@ func NewListener(shutdownTimeout time.Duration, server Listener) Server {
 func (s *Serve) Start() {
 	go func() {
 		if err := s.server.ListenAndServe(); err != nil {
-			if err != http.ErrServerClosed {
+			// to ignore shutdown error
+			if err != s.shutdownError {
 				log.Fatalf("start listener error: %s", err)
 			}
 		}

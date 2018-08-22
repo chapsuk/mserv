@@ -49,12 +49,15 @@ func main() {
 		// grpc
 		mserv.NewGRPCServer(":8085", grpcServer()),
 		// radius server :8086
-		mserv.NewListener(5*time.Second, listenerApp()),
+		mserv.NewListener(5*time.Second, radius.ErrServerShutdown, listenerApp()),
 	)
 
 	s.Start()
 	<-grace.ShutdownContext(context.Background()).Done()
 	s.Stop()
+
+	// to see any shutdown errors
+	time.Sleep(time.Millisecond * 100)
 }
 
 // you can test it with
