@@ -1,9 +1,11 @@
 package mserv
 
+import "errors"
+
 // Server interface
 type Server interface {
-	Start()
-	Stop()
+	Start() error
+	Stop() error
 }
 
 // MultiServer is servers aggregator
@@ -23,19 +25,34 @@ func New(servers ...Server) Server {
 }
 
 // Start servers
-func (ms *MultiServer) Start() {
+func (ms *MultiServer) Start() error {
+	if log == nil {
+		return errors.New("missing logger, you must call mserv.SetLogger")
+	}
+
 	for _, s := range ms.servers {
-		if s != nil {
-			s.Start()
+		if s == nil {
+			continue
+		}
+
+		if err := s.Start(); err != nil {
+			return err
 		}
 	}
+
+	return nil
 }
 
 // Stop multiple servers and return concatenated error
-func (ms *MultiServer) Stop() {
+func (ms *MultiServer) Stop() error {
 	for _, s := range ms.servers {
-		if s != nil {
-			s.Stop()
+		if s == nil {
+			continue
+		}
+		if err := s.Stop(); err != nil {
+			return err
 		}
 	}
+
+	return nil
 }

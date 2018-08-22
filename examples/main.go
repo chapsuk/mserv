@@ -3,10 +3,11 @@ package main
 import (
 	"context"
 	"crypto/tls"
+	"log"
 	"net/http"
+	_ "net/http/pprof"
+	"os"
 	"time"
-
-	"github.com/prometheus/client_golang/prometheus/promhttp"
 
 	"github.com/chapsuk/grace"
 	"github.com/chapsuk/mserv"
@@ -14,46 +15,88 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/labstack/echo"
 	"github.com/labstack/echo/middleware"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
-
-	_ "net/http/pprof"
 )
 
-func main() {
-	s := mserv.New(
-		// pprof
-		mserv.NewHTTPServer(time.Second, &http.Server{
+type serverFunc = func() (mserv.Server, error)
+
+// to simplify error catch
+var servers = []serverFunc{
+	// pprof
+	func() (mserv.Server, error) {
+		return mserv.NewHTTPServer(time.Second, &http.Server{
 			Addr:    ":8081",
 			Handler: http.DefaultServeMux,
-		}),
-		// prometheus
-		mserv.NewHTTPServer(time.Second, &http.Server{
+		})
+	},
+
+	// prometheus
+	func() (mserv.Server, error) {
+		return mserv.NewHTTPServer(time.Second, &http.Server{
 			Addr:    ":8082",
 			Handler: promhttp.Handler(),
-		}),
-		// gin
-		mserv.NewHTTPServer(5*time.Second, &http.Server{
+		})
+	},
+
+	// gin
+	func() (mserv.Server, error) {
+		return mserv.NewHTTPServer(5*time.Second, &http.Server{
 			Addr:         ":8083",
 			Handler:      ginApp(),
 			ReadTimeout:  10 * time.Second,
 			WriteTimeout: 10 * time.Second,
-		}),
-		// echo
-		mserv.NewHTTPServer(5*time.Second, &http.Server{
+		})
+	},
+
+	// echo
+	func() (mserv.Server, error) {
+		return mserv.NewHTTPServer(5*time.Second, &http.Server{
 			Addr:         ":8084",
 			Handler:      echoApp(),
 			TLSConfig:    &tls.Config{ /**todo**/ },
 			ReadTimeout:  5 * time.Second,
 			WriteTimeout: 5 * time.Second,
-		}),
-		// grpc
-		mserv.NewGRPCServer(":8085", grpcServer()),
-	)
+		})
+	},
 
-	s.Start()
+	// grpc
+	func() (mserv.Server, error) {
+		return mserv.NewGRPCServer(":8085", grpcServer())
+	},
+}
+
+func main() {
+	logger := log.New(os.Stderr, "", log.LstdFlags)
+	mserv.SetLogger(logger)
+
+	serves := make([]mserv.Server, 0, len(servers))
+
+	for _, serve := range servers {
+		s, err := serve()
+		if err != nil {
+			panic(err)
+		}
+
+		serves = append(serves, s)
+	}
+
+	s := mserv.New(serves...)
+
+	logger.Println("Start servers")
+	if err := s.Start(); err != nil {
+		panic(err)
+	}
+
 	<-grace.ShutdownContext(context.Background()).Done()
-	s.Stop()
+	logger.Printf("Received stop signal")
+
+	logger.Println("Stop servers")
+	if err := s.Stop(); err != nil {
+		panic(err)
+	}
+	logger.Println("Gracefully stopped")
 }
 
 func echoApp() *echo.Echo {
@@ -71,6 +114,8 @@ func echoApp() *echo.Echo {
 }
 
 func ginApp() *gin.Engine {
+	gin.SetMode(gin.ReleaseMode)
+
 	router := gin.Default()
 	router.GET("/user/:name/*action", func(c *gin.Context) {
 		name := c.Param("name")

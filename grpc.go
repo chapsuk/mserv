@@ -1,6 +1,8 @@
 package mserv
 
 import (
+	"errors"
+	"fmt"
 	"net"
 
 	"google.golang.org/grpc"
@@ -11,21 +13,21 @@ type GRPCServer struct {
 	server *grpc.Server
 }
 
-func NewGRPCServer(addr string, server *grpc.Server) Server {
+func NewGRPCServer(addr string, server *grpc.Server) (Server, error) {
 	if addr == "" {
-		return nil
+		return nil, errors.New("missing bind address for grpc.Server")
 	}
 
 	return &GRPCServer{
 		addr:   addr,
 		server: server,
-	}
+	}, nil
 }
 
-func (g *GRPCServer) Start() {
+func (g *GRPCServer) Start() error {
 	lis, err := net.Listen("tcp", g.addr)
 	if err != nil {
-		log.Fatalf("failed to listen: %v", err)
+		return fmt.Errorf("failed to listen: %v", err)
 	}
 
 	go func() {
@@ -35,11 +37,16 @@ func (g *GRPCServer) Start() {
 			}
 		}
 	}()
+
+	return nil
 }
 
-func (g *GRPCServer) Stop() {
+func (g *GRPCServer) Stop() error {
 	if g.server == nil {
-		return
+		return nil
 	}
+
 	g.server.GracefulStop()
+
+	return nil
 }
