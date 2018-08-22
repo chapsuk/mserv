@@ -4,9 +4,8 @@ import (
 	"context"
 	"crypto/tls"
 	"net/http"
+	_ "net/http/pprof"
 	"time"
-
-	"github.com/prometheus/client_golang/prometheus/promhttp"
 
 	"github.com/chapsuk/grace"
 	"github.com/chapsuk/mserv"
@@ -14,10 +13,10 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/labstack/echo"
 	"github.com/labstack/echo/middleware"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
-
-	_ "net/http/pprof"
+	"layeh.com/radius"
 )
 
 func main() {
@@ -49,11 +48,32 @@ func main() {
 		}),
 		// grpc
 		mserv.NewGRPCServer(":8085", grpcServer()),
+		// radius server :8086
+		mserv.NewListener(5*time.Second, listenerApp()),
 	)
 
 	s.Start()
 	<-grace.ShutdownContext(context.Background()).Done()
 	s.Stop()
+}
+
+// you can test it with
+// `echo "Message-Authenticator = 0x00" | radclient localhost:8086 auth secret`
+func listenerApp() mserv.Listener {
+	// radius auth handler
+	handler := func() radius.HandlerFunc {
+		return func(w radius.ResponseWriter, r *radius.Request) {
+			w.Write(r.Response(radius.CodeAccessAccept))
+		}
+	}
+
+	return &radius.PacketServer{
+		Addr:               ":8086",
+		Network:            "udp",
+		SecretSource:       radius.StaticSecretSource([]byte("secret")),
+		Handler:            handler(),
+		InsecureSkipVerify: true,
+	}
 }
 
 func echoApp() *echo.Echo {
@@ -71,6 +91,7 @@ func echoApp() *echo.Echo {
 }
 
 func ginApp() *gin.Engine {
+	gin.SetMode(gin.ReleaseMode)
 	router := gin.Default()
 	router.GET("/user/:name/*action", func(c *gin.Context) {
 		name := c.Param("name")
