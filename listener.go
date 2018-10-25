@@ -40,7 +40,7 @@ func (s *Serve) Start() {
 		if err := s.server.ListenAndServe(); err != nil {
 			// to ignore shutdown error
 			if err != s.shutdownError {
-				log.Fatalf("start listener error: %s", err)
+				log.Printf("start listener error: %s", err)
 			}
 		}
 	}()

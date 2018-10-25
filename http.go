@@ -40,7 +40,7 @@ func (h *HTTPServer) Start() {
 	go func() {
 		if err := h.server.ListenAndServe(); err != nil {
 			if err != http.ErrServerClosed {
-				log.Fatalf("start http server error: %s", err)
+				log.Printf("start http server error: %s", err)
 			}
 		}
 	}()
