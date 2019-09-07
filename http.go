@@ -2,67 +2,89 @@ package mserv
 
 import (
 	"context"
+	"errors"
+	"fmt"
+	"net"
 	"net/http"
 	"time"
 )
 
+// HTTPServerOption allows configure http server optional settings
+type HTTPServerOption func(*HTTPServer)
+
+// HTTPShutdownTimeout sets shutdown timeout
+func HTTPShutdownTimeout(timeout time.Duration) HTTPServerOption {
+	return func(s *HTTPServer) {
+		s.shutdownTimeout = timeout
+	}
+}
+
+// HTTPSkipErrors sets skip errors flag
+func HTTPSkipErrors(skip bool) HTTPServerOption {
+	return func(s *HTTPServer) {
+		s.skipErrors = skip
+	}
+}
+
 // HTTPServer wrapper of http.Server
 type HTTPServer struct {
+	skipErrors      bool
 	shutdownTimeout time.Duration
 	server          *http.Server
 }
 
 // NewHTTPServer returns new http.Server wrapper
-func NewHTTPServer(shutdownTimeout time.Duration, server *http.Server) Server {
-	if server == nil {
-		log.Print("missing http.Server, skip")
-		return nil
+func NewHTTPServer(s *http.Server, opts ...HTTPServerOption) Server {
+	srv := &HTTPServer{
+		server:          s,
+		skipErrors:      false,
+		shutdownTimeout: 5 * time.Second,
 	}
 
-	if server.Addr == "" {
-		log.Print("missing bind address for http.Server, skip")
-		return nil
+	for _, opt := range opts {
+		opt(srv)
 	}
 
-	return &HTTPServer{
-		shutdownTimeout: shutdownTimeout,
-		server:          server,
-	}
+	return srv
 }
 
-// Start http server in goroutine
-// write fatal msg by log if cant start server
-func (h *HTTPServer) Start() {
-	if h == nil {
-		return
+// Start http server
+func (h *HTTPServer) Start() error {
+	if len(h.server.Addr) == 0 {
+		return h.returnErr(errors.New("missing bind addr"))
+	}
+
+	ls, err := net.Listen("tcp", h.server.Addr)
+	if err != nil {
+		return h.returnErr(err)
 	}
 
 	go func() {
-		if err := h.server.ListenAndServe(); err != nil {
-			if err != http.ErrServerClosed {
-				log.Printf("start http server error: %s", err)
+		if serr := h.server.Serve(ls); serr != nil && serr != http.ErrServerClosed {
+			if !h.skipErrors {
+				panic(fmt.Sprintf("http.Serve return unexpected error: %s", serr))
 			}
 		}
 	}()
+
+	return nil
 }
 
-// Stop http server with timeout
-func (h *HTTPServer) Stop() {
-	if h == nil {
-		return
-	}
-
+// Stop stops http server with timeout
+func (h *HTTPServer) Stop() error {
 	if h.shutdownTimeout == 0 {
-		if err := h.server.Close(); err != nil {
-			log.Printf("stop http server error: %s", err)
-		}
-		return
+		return h.returnErr(h.server.Close())
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), h.shutdownTimeout)
 	defer cancel()
 
-	if err := h.server.Shutdown(ctx); err != nil {
-		log.Printf("stop http server error: %s", err)
+	return h.returnErr(h.server.Shutdown(ctx))
+}
+
+func (h *HTTPServer) returnErr(err error) error {
+	if h.skipErrors {
+		return nil
 	}
+	return err
 }
