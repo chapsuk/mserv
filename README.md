@@ -1,6 +1,7 @@
 # Mserv
 
 [![Build Status](https://travis-ci.org/chapsuk/mserv.svg?branch=master)](https://travis-ci.org/chapsuk/mserv)
+[![FOSSA Status](https://app.fossa.io/api/projects/git%2Bgithub.com%2Fchapsuk%2Fmserv.svg?type=shield)](https://app.fossa.io/projects/git%2Bgithub.com%2Fchapsuk%2Fmserv?ref=badge_shield)
 
 Package for grouping many servers (http, grpc, ...) and start|stop by single command.
 Aims to simplify startup process and controll group of servers.
@@ -23,3 +24,7 @@ err  := srvs.Start()
 // ... do work ...
 err := srvs.Stop()
 ```
+
+
+## License
+[![FOSSA Status](https://app.fossa.io/api/projects/git%2Bgithub.com%2Fchapsuk%2Fmserv.svg?type=large)](https://app.fossa.io/projects/git%2Bgithub.com%2Fchapsuk%2Fmserv?ref=badge_large)
