@@ -1,10 +1,10 @@
-package mserv_test
+package server_test
 
 import (
 	"testing"
 	"time"
 
-	"github.com/chapsuk/mserv"
+	"github.com/chapsuk/mserv/server"
 	"github.com/stretchr/testify/assert"
 	"layeh.com/radius"
 )
@@ -26,9 +26,9 @@ func TestRadiusServer(t *testing.T) {
 		}
 	)
 
-	srv, err := mserv.NewRadiusServer(rsrv,
-		mserv.RadiusSkipErrors(false),
-		mserv.RadiusShutdownTimeout(time.Second))
+	srv, err := server.NewRadius(rsrv,
+		server.RadiusSkipErrors(false),
+		server.RadiusShutdownTimeout(time.Second))
 
 	assert.NoError(t, err)
 	assert.NotNil(t, srv)

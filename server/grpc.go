@@ -1,4 +1,4 @@
-package mserv
+package server
 
 import (
 	"errors"
@@ -25,8 +25,8 @@ type GRPCServer struct {
 	server     *grpc.Server
 }
 
-// NewGRPCServer returns grpc server wrapper
-func NewGRPCServer(addr string, server *grpc.Server, opts ...GRPCServerOption) Server {
+// NewGRPC returns grpc server wrapper
+func NewGRPC(addr string, server *grpc.Server, opts ...GRPCServerOption) *GRPCServer {
 	srv := &GRPCServer{
 		addr:       addr,
 		server:     server,
