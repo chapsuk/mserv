@@ -24,7 +24,3 @@ err  := srvs.Start()
 // ... do work ...
 err := srvs.Stop()
 ```
-
-
-## License
-[![FOSSA Status](https://app.fossa.io/api/projects/git%2Bgithub.com%2Fchapsuk%2Fmserv.svg?type=large)](https://app.fossa.io/projects/git%2Bgithub.com%2Fchapsuk%2Fmserv?ref=badge_large)

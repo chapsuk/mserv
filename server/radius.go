@@ -1,4 +1,4 @@
-package mserv
+package server
 
 import (
 	"context"
@@ -36,8 +36,8 @@ type RadiusServer struct {
 	skipErrors      bool
 }
 
-// NewRadiusServer return server
-func NewRadiusServer(s *radius.PacketServer, opts ...RadiusOption) (Server, error) {
+// NewRadius return server
+func NewRadius(s *radius.PacketServer, opts ...RadiusOption) (*RadiusServer, error) {
 	// source: https://github.com/layeh/radius/blob/master/server-packet.go#L190-L195
 	if s.Handler == nil {
 		return nil, errors.New("radius: nil Handler")

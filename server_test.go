@@ -12,7 +12,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"google.golang.org/grpc"
 )
 
 var startPort = 11101
@@ -29,18 +28,18 @@ func TestMServerNilServer(t *testing.T) {
 
 func TestMServerStartStop(t *testing.T) {
 	var (
-		grpcAddr = testAddr()
-		httpAddr = testAddr()
+		httpAddr1 = testAddr()
+		httpAddr2 = testAddr()
 	)
 
 	srv := mserv.New(
-		mserv.NewGRPCServer(grpcAddr, grpc.NewServer()),
-		mserv.NewHTTPServer(&http.Server{Addr: httpAddr}),
+		mserv.NewHTTPServer(&http.Server{Addr: httpAddr1}),
+		mserv.NewHTTPServer(&http.Server{Addr: httpAddr2}),
 	)
 
 	assert.NoError(t, srv.Start())
-	assert.True(t, hasListener(grpcAddr))
-	assert.True(t, hasListener(httpAddr))
+	assert.True(t, hasListener(httpAddr1))
+	assert.True(t, hasListener(httpAddr2))
 	assert.NoError(t, srv.Stop())
 }
 
@@ -48,7 +47,7 @@ func TestMServerFailStart(t *testing.T) {
 	var httpAddr = testAddr()
 
 	srv := mserv.New(
-		mserv.NewGRPCServer("foo", grpc.NewServer()),
+		mserv.NewHTTPServer(&http.Server{Addr: "foo"}),
 		mserv.NewHTTPServer(&http.Server{Addr: httpAddr}),
 	)
 
