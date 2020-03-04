@@ -2,6 +2,7 @@ package mserv
 
 import (
 	"context"
+	"crypto/tls"
 	"errors"
 	"fmt"
 	"net"
@@ -26,11 +27,19 @@ func HTTPSkipErrors(skip bool) HTTPServerOption {
 	}
 }
 
+// HTTPWithTLSConfig define tls config for server
+func HTTPWithTLSConfig(cfg *tls.Config) HTTPServerOption {
+	return func(s *HTTPServer) {
+		s.tlsConfig = cfg
+	}
+}
+
 // HTTPServer wrapper of http.Server
 type HTTPServer struct {
 	skipErrors      bool
 	shutdownTimeout time.Duration
 	server          *http.Server
+	tlsConfig       *tls.Config
 }
 
 // NewHTTPServer returns new http.Server wrapper
@@ -57,6 +66,10 @@ func (h *HTTPServer) Start() error {
 	ls, err := net.Listen("tcp", h.server.Addr)
 	if err != nil {
 		return h.returnErr(err)
+	}
+
+	if h.tlsConfig != nil {
+		ls = tls.NewListener(ls, h.tlsConfig)
 	}
 
 	go func() {

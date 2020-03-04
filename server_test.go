@@ -17,7 +17,7 @@ import (
 var startPort = 11101
 var testAddr = func() string {
 	startPort++
-	return fmt.Sprintf("127.0.0.1:%d", startPort)
+	return fmt.Sprintf("localhost:%d", startPort)
 }
 
 func TestMServerNilServer(t *testing.T) {
